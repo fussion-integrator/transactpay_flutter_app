@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:transact_pay/transact_pay.dart';
+import 'package:transact_pay_flutter/api/api_config.dart';
 import 'package:transact_pay_flutter/common_widget/app_bank_detail.dart';
 import 'package:transact_pay_flutter/common_widget/app_button.dart';
 import 'package:transact_pay_flutter/common_widget/app_countdown_timer.dart';
@@ -6,6 +9,7 @@ import 'package:transact_pay_flutter/common_widget/app_header.dart';
 import 'package:transact_pay_flutter/constant/app_colors.dart';
 import 'package:transact_pay_flutter/constant/app_images.dart';
 import 'package:transact_pay_flutter/screens/popup_dialog/bank_transfer_progress_popup.dart';
+import 'package:transact_pay_flutter/utils/page_navigator/fading_page_navigator.dart';
 
 class BankTransferScreen extends StatefulWidget {
   final String? firstName;
@@ -29,6 +33,38 @@ class BankTransferScreen extends StatefulWidget {
 }
 
 class _BankTransferScreenState extends State<BankTransferScreen> {
+  late TransactPay transactPay;
+
+  @override
+  void initState() {
+    super.initState();
+    transactPay = TransactPay(apiKey: apiKey, encryptionKey: encryptionKey);
+  }
+
+  Future<void> createOrderExample() async {
+    final payload = {
+      "reference": "{{orderreference}}",
+      "paymentoption": "bank-transfer",
+      "country": "NG",
+      "BankTransfer": {"bankcode": "000017"}
+    };
+
+    try {
+      final response = await transactPay.createOrder(payload);
+      Get.snackbar("New Order", "Order created successfully");
+      print("Order Created: ${response.body}");
+      // FadingPageNavigator(
+      //     context,
+      //     PaymentTypeScreen(
+      //       email: _emailController.text,
+      //       amount: _amountController.text,
+      //     ),
+      //     false);
+    } catch (e) {
+      print("Error creating order: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

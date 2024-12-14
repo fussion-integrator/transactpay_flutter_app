@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -9,6 +11,7 @@ import 'package:transact_pay_flutter/common_widget/app_header.dart';
 import 'package:transact_pay_flutter/common_widget/app_textfield.dart';
 import 'package:transact_pay_flutter/constant/app_images.dart';
 import 'package:transact_pay_flutter/screens/payment_type_screen.dart';
+import 'package:transact_pay_flutter/screens/popup_dialog/loading_progress_dialog.dart';
 import 'package:transact_pay_flutter/utils/money_formatter.dart';
 import 'package:transact_pay_flutter/utils/page_navigator/fading_page_navigator.dart';
 
@@ -39,9 +42,6 @@ class _PaymentInitiationScreenState extends State<PaymentInitiationScreen> {
   }
 
   late TransactPay transactPay;
-  late Future<String> createOrderFuture;
-  late Future<String> payWithCardFuture;
-  late Future<String> getBanksFuture;
 
   @override
   void initState() {
@@ -51,30 +51,45 @@ class _PaymentInitiationScreenState extends State<PaymentInitiationScreen> {
 
   Future<void> createOrderExample() async {
     final payload = {
-      "amount": _amountController.text,
-      "currency": "NGN",
-      "description": _descriptionController.text,
       "customer": {
-        "email": _emailController.text,
-        "name": "${_firstNameController.text} ${_lastNameController.text}",
-        "phone": _phoneNumberController.text
-      }
+        "firstname": _firstNameController.text,
+        "lastname": _lastNameController.text,
+        "mobile": _phoneNumberController.text,
+        "country": "NG",
+        "email": _emailController.text
+      },
+      "order": {
+        "amount": 100,
+        "reference": "12121212112",
+        "description": "Pay",
+        "currency": "NGN"
+      },
+      "payment": {"RedirectUrl": "https://add-you-webhook"}
     };
+    LoadingDialog();
 
     try {
       final response = await transactPay.createOrder(payload);
-      Get.snackbar("New Order", "Order created successfully");
-      print("Order Created: ${response.body}");
-      FadingPageNavigator(
-          context,
-          PaymentTypeScreen(
-            email: _emailController.text,
-            amount: _amountController.text,
-          ),
-          false);
+      print(response.statusCode);
+      if (response.statusCode == 200) {
+        Get.snackbar("New Order", "Order created successfully");
+        print("Order Created: ${response.body}");
+        FadingPageNavigator(
+            context,
+            PaymentTypeScreen(
+              email: _emailController.text,
+              amount: _amountController.text,
+            ),
+            false);
+      } else {
+        final Map<String, dynamic> decodedJson = jsonDecode(response.body);
+        Get.snackbar("New Order", decodedJson['message']);
+      }
     } catch (e) {
       print("Error creating order: $e");
     }
+
+    //Navigator.of(context).pop();
   }
 
   @override
